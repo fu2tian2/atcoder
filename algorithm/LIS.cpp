@@ -1,77 +1,58 @@
-//ABC165F
-//https://qiita.com/python_walker/items/d1e2be789f6e7a0851e5
 #include <bits/stdc++.h>
 using namespace std;
-typedef long long ll;
+typedef long long ll; //int:2*10**9
+typedef long double ld;
+typedef pair<ll,ll> P;
 #define REP(i,n) for(ll i = 0; i<(ll)(n); i++)
-#define REPS(i,n) for (ll i = 1; i<=(ll)(n); i++)
-#define REPD(i,n) for(ll i=(ll)(n)-1;i>=0;i--)
 #define FOR(i,a,b) for(ll i=(a);i<=(b);i++)
 #define FORD(i,a,b) for(ll i=(a);i>=(b);i--)
+#define vec2(name,i,j,k) vector<vector<ll>> name(i,vector<ll>(j,k))
+#define vec3(name,i,j,k,l) vector<vector<vector<ll>>> name(i,vector<vector<ll>>(j,vector<ll>(k,l)))
 #define pb push_back
-#define MOD 1000000007
-#define MOD2 998244353
+#define MOD 1000000007 //998244353
 #define PI 3.141592653
-#define INF 1000000000000000
+#define INF 100000000000000 //14
 #define N 210000
+//cin.tie(0);cout.tie(0);ios::sync_with_stdio(false);
 
-vector<ll> a(N,INF);
-vector<ll> ansl(N);
-vector<ll> bango(N);
-vector<ll> reached(N,0);
+vector<ll> a(N);
+vector<ll> ansl(N,-1); 
 vector<vector<ll>> conn(N);
+set<ll> s; //今いる位置での最長増加部分列をsに収納する
 
-
-//探索するものを定義しておく,初期値設定の値に注意!!
-//大きい順に並んでいて、自分より小さいものの最小のindexを見つける
-//自分より大きいもの見つけたければ昇順のvectorに対して不等号逆にする
-bool isOK(ll index, ll key){ 
-    if (a.at(index) >= key) return true; 
-    else return false;
+void dfs(ll l, ll now, ll past) { // lがpastまでの長さ
+    if (s.empty()) { //空のときは追加
+        s.insert(a[now]); l++; ansl[now]=l;
+        REP(i,conn[now].size()) if (conn[now][i]!=past) dfs(l,conn[now][i],now);
+        l--; s.erase(a[now]);
+        return;
+    }
+    auto ite = s.rbegin();
+    if (*ite<a[now]) { //今見てるnodeの値が最大値の場合は追加
+        s.insert(a[now]); l++;
+        ansl[now]=l;
+        REP(i,conn[now].size()) if (conn[now][i]!=past) dfs(l,conn[now][i],now);
+        l--; s.erase(a[now]);
+    }
+    else { // そうでない場合は列をなるべく小さい数のもので構成するために今のnodeの値を挿入
+        auto ite2 = s.lower_bound(a[now]);
+        ll x = *ite2;
+        s.erase(ite2); s.insert(a[now]);
+        ansl[now]=l;
+        REP(i,conn[now].size()) if (conn[now][i]!=past) dfs(l,conn[now][i],now);
+        s.erase(a[now]); s.insert(x);
+    }
+    return;
 }
-
-ll binse(ll key, ll sizem){ //sizem番目まで二分探索
-	ll left = -1;
-	ll right = sizem;
-	while (right-left>1){
-		ll mid = left+(right-left)/2;
-		if (isOK(mid, key)) right = mid;
-		else left = mid;
-	}
-	return right; //自分より大きい、または小さいものの最小のindex、なければsizemを返す
-}
-
-void dfs(ll x){
-	reached[x] = 1;
-	ll len = conn[x].size();
-	ll ind = binse(bango[x],N-1); // a内で二分探索
-	ll former = a[ind]; // 別の枝に移った時に戻せるようにもとの値を記録しておく.
-	a[ind] = bango[x];
-	ansl[x] = binse(INF/10,N-1); //INFじゃないところの長さがLIS.
-	// cout << x << " " << ansl[x] << " " << ind << endl;
-	if (len!=0){
-		REP(i,len){
-			if (reached[conn[x][i]]==0){
-				dfs(conn[x][i]);
-			}
-		}
-	}
-	a[ind] = former; // もとの値に戻す.
-}
-
 int main(){
-	ll n, x, u, v; cin >> n;
-	REP(i,n){
-		cin >> x;
-		bango[i] = x;
-	}
-	REP(i,n-1){
-		cin >> u >> v;
-		conn[u-1].pb(v-1);
-		conn[v-1].pb(u-1);
-	}
-	dfs(0);
-	REP(i,n){
-		cout << ansl[i] << endl;
-	}
+    ll n; cin >> n;
+    REP(i,n) cin >> a[i];
+    REP(i,n-1) {
+        ll u, v; cin >> u >> v; u--; v--;
+        conn[u].pb(v);
+        conn[v].pb(u);
+    }
+    dfs(0,0,-1);
+    REP(i,n) cout << ansl[i] << endl;
+    return 0;
 }

@@ -1,4 +1,3 @@
-// ABC189C 最大長方形
 #include <bits/stdc++.h>
 using namespace std;
 typedef long long ll; //int:2*10**9
@@ -15,33 +14,34 @@ typedef pair<ll,ll> P;
 #define INF 100000000000000 //14
 //cin.tie(0);cout.tie(0);ios::sync_with_stdio(false);
 int main(){
-  ll n; cin >> n;
-  vector<ll> a(n);
-  stack<vector<ll>> s;
-  REP(i,n) cin >> a[i];
-  ll ans = 0;
-  REP(i,n) {
-    if (a[i]>a[i-1] || s.empty()) s.push({a[i],i});
-    else if (a[i]<a[i-1]) {
-      ll reminder;
-      while (!s.empty()) {
-        ll x = s.top()[0];
-        ll y = s.top()[1];
-        if (x<=a[i]) break;
-        // cout << i << " " << x << " " << y << " " << a[i] << endl;
-        reminder = y;
-        ans = max(ans,x*(i-y));
-        s.pop();
-      }
-      s.push({a[i],reminder});
+    ll n; cin >> n;
+    stack<P> s;
+    ll ans = 0;
+    REP(i,n+1) {
+        ll a; 
+        if (i==n) a=0; // 最後は高さ0の長方形と見て、後処理を行う
+        else cin >> a;
+        ll reminder = INF; // x.first>aの時のwhileサイクルでどこまで戻るか記録
+        while (true) {
+            if (s.empty()) { //空のときは追加
+                if (reminder!=INF) s.push({a,reminder});
+                else s.push({a,i});
+                break;
+            }
+            auto x = s.top();
+            // cout << i << " " << a << " " << x.first << " " << x.second << endl;
+            if (x.first<a) {
+                if (reminder!=INF) s.push({a,reminder});
+                else s.push({a,i});
+                break;
+            }
+            else if (x.first>a) {
+                ans = max(ans,(i-x.second)*(x.first));
+                s.pop();
+                reminder = x.second;
+            }
+            else break; //x.first==aのときは何もする必要がない
+        }
     }
-  }
-  while (!s.empty()) {
-    ll x = s.top()[0];
-    ll y = s.top()[1];
-    // cout << x << " " << y << endl;
-    ans = max(ans,x*(n-y));
-    s.pop();
-  }
-  cout << ans << endl;
+    cout << ans << endl;
 }
