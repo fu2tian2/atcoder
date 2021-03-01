@@ -1,3 +1,4 @@
+//ABC189B 小数点誤差
 #include <bits/stdc++.h>
 using namespace std;
 typedef long long ll; //int:2*10**9
@@ -14,5 +15,15 @@ typedef pair<ll,ll> P;
 #define INF 100000000000000 //14
 //cin.tie(0);cout.tie(0);ios::sync_with_stdio(false);
 int main(){
-    
+    ll n; ld x; cin >> n >> x; ld delta = 1e-12;
+    ld bor = 0;
+    REP(i,n) {
+        ld v, p; cin >> v >> p;
+        bor+=v*p/100;
+        if (bor>x+delta) {
+            cout << i+1 << endl;
+            return 0;
+        }
+    }
+    cout << -1 << endl;
 }

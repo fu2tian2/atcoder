@@ -11,56 +11,52 @@ typedef pair<ll,ll> P;
 #define pb push_back
 #define MOD 1000000007 //998244353
 #define PI 3.141592653
-#define INF 100000000000000 //14
-#define N 210000
+#define INF 8000000000000000000 //14
 //cin.tie(0);cout.tie(0);ios::sync_with_stdio(false);
-vector<ll> a(N);
-vector<ll> b(N);
-vector<ll> p(N);
-
-int main() {
-  ll n; cin >> n;
-
+ll mod(ll x, ll y) {
+    if (x<0) x+=(abs(x)/y)*y+y;
+    return x%y;
 }
 
-// int main() {
-//   ll n; cin >> n;
-//   map<ll,ll> m;
-//   REP(i,2*n) {
-//     m[i]=i;
-//   }
-//   REP(i,n) {
-//     // m.erase(i*2);
-//     m[i]=0;
-//   }
-//   cout << "test1" << endl;
-//   for (auto iter=m.begin();iter!=m.end();iter++) {
-//     cout << iter->first << " " << iter->second << endl;
-//   }
-// }
+vector<ll> crt1(ll x, ll y) {
+    // x*s-y*t=gcd(x,y)となるs,t,gcdを返す
+    cout << "test1 " << x << " " << y << endl;
+    if (x%y==0) return {1,x/y-1,y};
+    auto v = crt1(y,x%y);
+    ll s = mod(-v[1],y/v[2]);
+    ll t = (x*s-v[2])/y;
+    cout << "test2 " << x << " " << y << " " << s << " " << t << endl;
+    return {s,t,v[2]};
+}
 
-// int main(){
-//   map<ll,ll> a;
-//   ll n; cin >> n;
-//   REP(i,n) {
-//     a[2*i]=1;
-//   }
-//   ll cnt = 0;
-//   for (auto ite=a.begin();ite!=a.end();ite++) {
-//     cnt++;
-//     cout << cnt << endl;
-//   }
-//   cout << cnt << endl;
-// }
+P crt2(ll a, ll b, ll c, ll d) {
+    // a mod bかつ、c mod dとなるval mod(lcm(b,d))
+    if (abs(c-a)%__gcd(b,d)!=0) return {INF,-1};
+    if (b<d) {swap(b,d); swap(a,c);}
+    auto v = crt1(b,d);
+    ll val = b*v[0]*((c-a)/v[2])+a;
+    ll lcm = b*d/v[2];
+    // cout << "test" << " " << val << endl;
+    val = mod(val,lcm);
+    return {val,lcm};
+}
+P crt(vector<ll> rem, vector<ll> div) {
+    // CRT(crt2のn個拡張版)
+    ll x = 0; ll y = 1; P v;
+    REP(i,rem.size()) {
+        if (y<div[i]) {swap(x,rem[i]); swap(y,div[i]);}
+        v = crt2(x,y,rem[i],div[i]);
+        // cout << i << " " << v.first << " " << v.second << endl;
+        if (v.second==-1) return {-1,-1};
+        x = v.first; y = v.second;
+    }
+    return v;
+}
 
-// int main() {
-//   vector<ll> a = {2,3};
-//   ll n; cin >> n;
-//   // REP(i,n) {
-//   //   ll ind = lower_bound(a.begin(),a.end(),i)-a.begin();
-//   //   cout << i << " " << ind << endl;
-//   // }
-//   for (auto ite=a.begin();ite!=a.end();ite++) {
-//     cout << *ite << endl;
-//   }
-// }
+int main() {
+    ll x, y, s, t; cin >> x >> y >> s >> t;
+    auto v = crt1(x,y);
+    auto w = crt2(s, x, t, y);
+    cout << v[0] << " " << v[1] << " " << v[2] << endl;
+    cout << w.first << " " << w.second << endl;
+}
