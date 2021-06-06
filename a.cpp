@@ -12,5 +12,6 @@ typedef pair<ll,ll> P;
 #define INF 100000000000000 //14
 //cin.tie(0);cout.tie(0);ios::sync_with_stdio(false);
 int main(){
-
+    ll n, k; cin >> n >> k;
+    
 }

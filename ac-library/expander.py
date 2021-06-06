@@ -4,42 +4,77 @@ import re
 import sys
 import argparse
 from logging import Logger, basicConfig, getLogger
-from os import getenv, environ
+from os import getenv, environ, pathsep
 from pathlib import Path
-from typing import List
+from typing import List, Set, Optional
 
 
 logger = getLogger(__name__)  # type: Logger
 
-atcoder_include = re.compile('#include\s*["<](atcoder/[a-z_]*(|.hpp))[">]\s*')
 
-include_guard = re.compile('#.*ATCODER_[A-Z_]*_HPP')
+class Expander:
+    atcoder_include = re.compile(
+        r'#include\s*["<](atcoder/[a-z_]*(|.hpp))[">]\s*')
 
-lib_path = Path.cwd()
+    include_guard = re.compile(r'#.*ATCODER_[A-Z_]*_HPP')
 
-defined = set()
+    def is_ignored_line(self, line) -> bool:
+        if self.include_guard.match(line):
+            return True
+        if line.strip() == "#pragma once":
+            return True
+        if line.strip().startswith('//'):
+            return True
+        return False
 
-def dfs(f: str) -> List[str]:
-    global defined
-    if f in defined:
-        logger.info('already included {}, skip'.format(f))
-        return []
-    defined.add(f)
+    def __init__(self, lib_paths: List[Path]):
+        self.lib_paths = lib_paths
 
-    logger.info('include {}'.format(f))
+    included = set()  # type: Set[Path]
 
-    s = open(str(lib_path / f)).read()
-    result = []
-    for line in s.splitlines():
-        if include_guard.match(line):
-            continue
+    def find_acl(self, acl_name: str) -> Path:
+        for lib_path in self.lib_paths:
+            path = lib_path / acl_name
+            if path.exists():
+                return path
+        logger.error('cannot find: {}'.format(acl_name))
+        raise FileNotFoundError()
 
-        m = atcoder_include.match(line)
-        if m:
-            result.extend(dfs(m.group(1)))
-            continue
-        result.append(line)
-    return result
+    def expand_acl(self, acl_file_path: Path) -> List[str]:
+        if acl_file_path in self.included:
+            logger.info('already included: {}'.format(acl_file_path.name))
+            return []
+        self.included.add(acl_file_path)
+        logger.info('include: {}'.format(acl_file_path.name))
+
+        acl_source = open(str(acl_file_path)).read()
+
+        result = []  # type: List[str]
+        for line in acl_source.splitlines():
+            if self.is_ignored_line(line):
+                continue
+
+            m = self.atcoder_include.match(line)
+            if m:
+                name = m.group(1)
+                result.extend(self.expand_acl(self.find_acl(name)))
+                continue
+
+            result.append(line)
+        return result
+
+    def expand(self, source: str) -> str:
+        self.included = set()
+        result = []  # type: List[str]
+        for line in source.splitlines():
+            m = self.atcoder_include.match(line)
+            if m:
+                acl_path = self.find_acl(m.group(1))
+                result.extend(self.expand_acl(acl_path))
+                continue
+
+            result.append(line)
+        return '\n'.join(result)
 
 
 if __name__ == "__main__":
@@ -55,22 +90,17 @@ if __name__ == "__main__":
     parser.add_argument('--lib', help='Path to Atcoder Library')
     opts = parser.parse_args()
 
+    lib_paths = []
     if opts.lib:
-        lib_path = Path(opts.lib)
-    elif 'CPLUS_INCLUDE_PATH' in environ:
-        lib_path = Path(environ['CPLUS_INCLUDE_PATH'])
-    s = open(opts.source).read()
+        lib_paths.append(Path(opts.lib))
+    if 'CPLUS_INCLUDE_PATH' in environ:
+        lib_paths.extend(
+            map(Path, filter(None, environ['CPLUS_INCLUDE_PATH'].split(pathsep))))
+    lib_paths.append(Path.cwd())
+    expander = Expander(lib_paths)
+    source = open(opts.source).read()
+    output = expander.expand(source)
 
-    result = []
-    for line in s.splitlines():
-        m = atcoder_include.match(line)
-
-        if m:
-            result.extend(dfs(m.group(1)))
-            continue
-        result.append(line)
-
-    output = '\n'.join(result) + '\n'
     if opts.console:
         print(output)
     else:

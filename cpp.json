@@ -323,5 +323,45 @@
 			"}"
 		],
 		"description": ""
+	},
+	"scc": {
+		"prefix": "scc",
+		"body": [
+			"struct SCC {"
+			"	ll n;"
+			"	vector<vector<pair<ll,bool>>> conn;"
+			"	vector<ll> checked;"
+			"	vector<ll> orderList;"
+			"	vector<ll> groupList;"
+			"	ll cnt = 0;"
+			"	SCC(ll n) : n(n), conn(n), checked(n,0), orderList(n,-1), groupList(n,-1) {};"
+			"	void dfs(ll now, ll prev) {"
+			"		checked[now]=1;"
+			"		for (auto v : conn[now]) {"
+			"			if (checked[v.first]==1 || v.first==prev || v.second==false) continue;"
+			"			dfs(v.first,now);"
+			"		}"
+			"		orderList[cnt]=now; cnt++;"
+			"		return;"
+			"	}"
+			"	void dfs2(ll now, ll group) {"
+			"		groupList[now]=group;"
+			"		for (auto v : conn[now]) {"
+			"			if (groupList[v.first]!=-1 || v.second==true) continue;"
+			"			dfs2(v.first,group);"
+			"		}"
+			"		return;"
+			"	}"
+			"	void make_group() {"
+			"		REP(i,n) if (!checked[i]) dfs(i,-1);"
+			"		FORD(i,n-1,0) {"
+			"			if (orderList[i]==-1) break;"
+			"			if (groupList[orderList[i]]!=-1) continue;"
+			"			dfs2(orderList[i],orderList[i]);"
+			"		}"
+			"	}"
+			"};"
+		],
+		"description": ""
 	}
 }
